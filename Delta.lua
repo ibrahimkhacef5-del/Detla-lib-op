@@ -1,17 +1,16 @@
 --[[
     =========================================
-    Delta UI Library v3.0.0 (Ultimate Edition)
-    Author: YourName
-    GitHub: https://github.com/YourUsername/Delta-UI
-    Description: The most advanced, feature-rich UI library.
-    Features: Tabs, Sliders, Toggles, ColorPickers, Dropdowns, Textboxes, Notifications, Auto-Save.
+    Delta UI Library v4.0.0 (Ultimate Edition)
+    Author: ibrahimkhacef5-del
+    GitHub: https://github.com/ibrahimkhacef5-del/Detla-lib-op
+    Description: Feature-rich UI Library with Key System, Loading Screen, Auto-Save, and Advanced Elements.
     =========================================
 ]]
 
 local Delta = {}
 Delta.__index = Delta
 
-if _G.DeltaUI_v3_Loaded then return _G.DeltaUI_v3_Loaded end
+if _G.DeltaUI_v4_Loaded then return _G.DeltaUI_v4_Loaded end
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -22,7 +21,7 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 -- =========================================
--- الألوان (Theme)
+-- إعدادات الألوان (Theme)
 -- =========================================
 Delta.Theme = {
     Background = Color3.fromRGB(15, 15, 15),
@@ -53,14 +52,16 @@ local function Stroke(parent, color, thickness)
     local s = Instance.new("UIStroke"); s.Color = color; s.Thickness = thickness; s.Parent = parent; return s
 end
 
--- نظام الحفظ التلقائي (Auto-Save System)
-local ConfigFile = "DeltaUI_Config.json"
+-- =========================================
+-- نظام الحفظ التلقائي المتقدم (Auto-Save System)
+-- =========================================
+local ConfigFile = "DeltaUI_v4_Config.json"
 local SavedConfig = {}
 
 local function LoadConfig()
     if isfile and isfile(ConfigFile) then
         local success, data = pcall(function() return HttpService:JSONDecode(readfile(ConfigFile)) end)
-        if success then SavedConfig = data end
+        if success and type(data) == "table" then SavedConfig = data end
     end
 end
 
@@ -73,11 +74,88 @@ end
 LoadConfig()
 
 -- =========================================
+-- نظام الحماية (Key System)
+-- =========================================
+function Delta:LoadKeySystem(validKeys, onSuccess)
+    local KeyGui = Create("ScreenGui", {Name = "DeltaKeySystem", ResetOnSpawn = false, Parent = CoreGui or LocalPlayer:WaitForChild("PlayerGui")})
+    
+    local MainKeyFrame = Create("Frame", {
+        Size = UDim2.new(0, 350, 0, 250), Position = UDim2.new(0.5, -175, 0.5, -125),
+        BackgroundColor3 = Delta.Theme.Background, Parent = KeyGui
+    })
+    Corner(MainKeyFrame, 12); Stroke(MainKeyFrame, Delta.Theme.Border, 1)
+
+    Create("TextLabel", {Size = UDim2.new(1, 0, 0, 50), BackgroundTransparency = 1, Text = "Delta Key System", TextColor3 = Delta.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 20, Parent = MainKeyFrame})
+    Create("TextLabel", {Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 0, 60), BackgroundTransparency = 1, Text = "Please enter your access key below:", TextColor3 = Delta.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = MainKeyFrame})
+
+    local KeyBox = Create("TextBox", {
+        Size = UDim2.new(1, -40, 0, 40), Position = UDim2.new(0, 20, 0, 90),
+        BackgroundColor3 = Delta.Theme.Surface, Text = "", PlaceholderText = "Paste your key here...",
+        TextColor3 = Delta.Theme.Text, PlaceholderColor3 = Delta.Theme.SubText, Font = Enum.Font.Code, TextSize = 14, Parent = MainKeyFrame
+    })
+    Corner(KeyBox, 6); Stroke(KeyBox, Delta.Theme.Border, 1)
+
+    local StatusLabel = Create("TextLabel", {Size = UDim2.new(1, -40, 0, 20), Position = UDim2.new(0, 20, 0, 140), BackgroundTransparency = 1, Text = "", TextColor3 = Delta.Theme.Danger, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = MainKeyFrame})
+
+    local SubmitBtn = Create("TextButton", {
+        Size = UDim2.new(1, -40, 0, 40), Position = UDim2.new(0, 20, 0, 180),
+        BackgroundColor3 = Delta.Theme.Accent, Text = "Verify Key", TextColor3 = Color3.new(0,0,0),
+        Font = Enum.Font.GothamBold, TextSize = 14, Parent = MainKeyFrame
+    })
+    Corner(SubmitBtn, 6)
+
+    SubmitBtn.MouseButton1Click:Connect(function()
+        local key = KeyBox.Text
+        local isValid = false
+        for _, v in ipairs(validKeys) do
+            if key == v then isValid = true break end
+        end
+
+        if isValid then
+            StatusLabel.Text = "Key Valid! Loading..."; StatusLabel.TextColor3 = Delta.Theme.Accent
+            task.wait(1)
+            KeyGui:Destroy()
+            if onSuccess then onSuccess() end
+        else
+            StatusLabel.Text = "Invalid Key. Try again."; StatusLabel.TextColor3 = Delta.Theme.Danger
+            TweenService:Create(KeyBox, TweenInfo.new(0.1), {Position = UDim2.new(0, 25, 0, 90)}):Play()
+            task.wait(0.1)
+            TweenService:Create(KeyBox, TweenInfo.new(0.1), {Position = UDim2.new(0, 20, 0, 90)}):Play()
+        end
+    end)
+end
+
+-- =========================================
+-- شاشة التحميل (Loading Screen)
+-- =========================================
+function Delta:LoadLoadingScreen(text)
+    local LoadGui = Create("ScreenGui", {Name = "DeltaLoading", ResetOnSpawn = false, Parent = CoreGui or LocalPlayer:WaitForChild("PlayerGui")})
+    local LoadFrame = Create("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Delta.Theme.Background, Parent = LoadGui})
+    
+    Create("TextLabel", {Size = UDim2.new(1, 0, 0, 50), Position = UDim2.new(0, 0, 0.4, 0), BackgroundTransparency = 1, Text = text or "Loading Delta UI...", TextColor3 = Delta.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 24, Parent = LoadFrame})
+    
+    local SpinFrame = Create("Frame", {Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(0.5, -20, 0.5, 0), BackgroundTransparency = 1, Parent = LoadFrame})
+    local Spinner = Create("Frame", {Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Parent = SpinFrame})
+    local SpinStroke = Create("UIStroke", {Color = Delta.Theme.Accent, Thickness = 4, Parent = Spinner})
+    local SpinCorner = Corner(Spinner, 20)
+    SpinStroke.LineJoinMode = Enum.LineJoinMode.Round
+    
+    local spinTween = TweenService:Create(Spinner, TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
+    spinTween:Play()
+    
+    task.wait(2) -- وقت وهمي للتحميل
+    TweenService:Create(LoadFrame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(SpinStroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+    task.wait(0.5)
+    LoadGui:Destroy()
+end
+
+-- =========================================
 -- 1. إنشاء النافذة (Window)
 -- =========================================
 function Delta:CreateWindow(config)
     local Window = setmetatable({}, {__index = self})
-    local title = config.Title or "Delta UI v3"
+    local title = config.Title or "Delta UI v4"
     local size = config.Size or UDim2.new(0, 520, 0, 380)
     
     Window.Tabs = {}
@@ -87,10 +165,7 @@ function Delta:CreateWindow(config)
     local ScreenGui = Create("ScreenGui", {Name = guiName, ResetOnSpawn = false, Parent = CoreGui or LocalPlayer:WaitForChild("PlayerGui")})
     Window.ScreenGui = ScreenGui
     
-    local Main = Create("Frame", {
-        Name = "Main", Size = size, Position = UDim2.new(0.5, -size.X.Offset/2, 0.5, -size.Y.Offset/2),
-        BackgroundColor3 = Delta.Theme.Background, BorderSizePixel = 0, Parent = ScreenGui
-    })
+    local Main = Create("Frame", {Name = "Main", Size = size, Position = UDim2.new(0.5, -size.X.Offset/2, 0.5, -size.Y.Offset/2), BackgroundColor3 = Delta.Theme.Background, BorderSizePixel = 0, Parent = ScreenGui})
     Corner(Main, 12); Stroke(Main, Delta.Theme.Border, 1)
     Window.MainFrame = Main
     
@@ -99,7 +174,7 @@ function Delta:CreateWindow(config)
     Corner(TopBar, 12)
     Create("Frame", {Size = UDim2.new(1,0,0,10), Position = UDim2.new(0,0,1,-10), BackgroundColor3 = Delta.Theme.Surface, Parent = TopBar})
     
-    Create("TextLabel", {Size = UDim2.new(1, -50, 1, 0), Position = UDim2.new(0, 15, 0, 0), BackgroundTransparency = 1, Text = title, TextColor3 = Delta.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = TopBar})
+    Create("TextLabel", {Size = UDim2.new(1, -100, 1, 0), Position = UDim2.new(0, 15, 0, 0), BackgroundTransparency = 1, Text = title, TextColor3 = Delta.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = TopBar})
     
     -- زر التصغير
     local MinBtn = Create("TextButton", {Size = UDim2.new(0, 24, 0, 24), Position = UDim2.new(1, -64, 0.5, -12), BackgroundColor3 = Delta.Theme.SurfaceLight, Text = "-", TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 14, Parent = TopBar})
@@ -122,11 +197,7 @@ function Delta:CreateWindow(config)
     Create("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Sidebar})
     
     -- حاوية المحتوى
-    local ContentArea = Create("ScrollingFrame", {
-        Size = UDim2.new(1, -150, 1, -60), Position = UDim2.new(0, 140, 0, 50),
-        BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4,
-        ScrollBarImageColor3 = Delta.Theme.Border, CanvasSize = UDim2.new(0,0,0,0), Parent = Main
-    })
+    local ContentArea = Create("ScrollingFrame", {Size = UDim2.new(1, -150, 1, -60), Position = UDim2.new(0, 140, 0, 50), BackgroundTransparency = 1, BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = Delta.Theme.Border, CanvasSize = UDim2.new(0,0,0,0), Parent = Main})
     local ContentLayout = Create("UIListLayout", {Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = ContentArea})
     
     ContentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -155,11 +226,11 @@ function Delta:CreateWindow(config)
     function Window:SetSize(newSize) TweenService:Create(Main, TweenInfo.new(0.3), {Size = newSize}):Play() end
     -- API: تدمير النافذة
     function Window:Destroy() ScreenGui:Destroy() end
-    -- API: حفظ الإعدادات يدوياً
+    -- API: حفظ الإعدادات
     function Window:SaveSettings() SaveConfig() end
 
     -- =========================================
-    -- نظام الإشعارات (Notifications System)
+    -- نظام الإشعارات
     -- =========================================
     local NotifArea = Create("Frame", {Size = UDim2.new(0, 250, 1, 0), Position = UDim2.new(1, -260, 0, 0), BackgroundTransparency = 1, Parent = ScreenGui})
     local NotifLayout = Create("UIListLayout", {Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = NotifArea})
@@ -172,48 +243,37 @@ function Delta:CreateWindow(config)
         
         local notif = Create("Frame", {Size = UDim2.new(1, 0, 0, 50), BackgroundColor3 = Delta.Theme.Surface, Parent = NotifArea, BackgroundTransparency = 1})
         Corner(notif, 8)
-        local stroke = Stroke(notif, color, 1)
-        stroke.Transparency = 1
-        
+        local stroke = Stroke(notif, color, 1); stroke.Transparency = 1
         local label = Create("TextLabel", {Size = UDim2.new(1, -20, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Parent = notif})
         
-        -- أنيميشن الدخول
         notif.Position = UDim2.new(1, 50, 0, 0)
         TweenService:Create(notif, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 0.1}):Play()
         TweenService:Create(stroke, TweenInfo.new(0.4), {Transparency = 0}):Play()
         TweenService:Create(label, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
         
-        -- أنيميشن الخروج
         task.delay(duration, function()
             TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(1, 50, 0, 0), BackgroundTransparency = 1}):Play()
             TweenService:Create(stroke, TweenInfo.new(0.3), {Transparency = 1}):Play()
             TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
-            task.wait(0.4)
-            notif:Destroy()
+            task.wait(0.4); notif:Destroy()
         end)
     end
 
     -- =========================================
-    -- نظام التأكيد (Confirmation Dialog)
+    -- نظام التأكيد (Confirm Dialog)
     -- =========================================
     function Window:Confirm(text, onConfirm)
         local confirmGui = Create("Frame", {Size = UDim2.new(0, 300, 0, 150), Position = UDim2.new(0.5, -150, 0.5, -75), BackgroundColor3 = Delta.Theme.Surface, Parent = ScreenGui, ZIndex = 200})
         Corner(confirmGui, 10); Stroke(confirmGui, Delta.Theme.Border, 1)
-        
         Create("TextLabel", {Size = UDim2.new(1, -20, 0, 60), Position = UDim2.new(0, 10, 0, 10), BackgroundTransparency = 1, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 14, TextWrapped = true, Parent = confirmGui})
-        
         local btnArea = Create("Frame", {Size = UDim2.new(1, -20, 0, 40), Position = UDim2.new(0, 10, 1, -50), BackgroundTransparency = 1, Parent = confirmGui})
         
         local yesBtn = Create("TextButton", {Size = UDim2.new(0.48, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0), BackgroundColor3 = Delta.Theme.Accent, Text = "Yes", TextColor3 = Color3.new(0,0,0), Font = Enum.Font.GothamBold, TextSize = 13, Parent = btnArea})
         Corner(yesBtn, 6)
-        
         local noBtn = Create("TextButton", {Size = UDim2.new(0.48, 0, 1, 0), Position = UDim2.new(0.52, 0, 0, 0), BackgroundColor3 = Delta.Theme.Danger, Text = "No", TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 13, Parent = btnArea})
         Corner(noBtn, 6)
         
-        yesBtn.MouseButton1Click:Connect(function()
-            if onConfirm then onConfirm() end
-            confirmGui:Destroy()
-        end)
+        yesBtn.MouseButton1Click:Connect(function() if onConfirm then pcall(onConfirm) end; confirmGui:Destroy() end)
         noBtn.MouseButton1Click:Connect(function() confirmGui:Destroy() end)
     end
 
@@ -238,7 +298,7 @@ function Delta:CreateWindow(config)
         if #Window.Tabs == 1 then TabBtn:Fire("MouseButton1Click") end
         local TabAPI = {}
         
-        -- 1. زر
+        -- 1. زر عادي
         function TabAPI:AddButton(text, callback)
             local btn = Create("TextButton", {Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = Delta.Theme.SurfaceLight, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 13, Parent = TabContainer})
             Corner(btn, 6)
@@ -247,20 +307,22 @@ function Delta:CreateWindow(config)
             btn.MouseButton1Click:Connect(function() if callback then pcall(callback) end end)
         end
 
-        -- 2. زر خطر (مع تأكيد)
+        -- 2. نص (Label)
+        function TabAPI:AddLabel(text)
+            local lbl = Create("TextLabel", {Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = TabContainer})
+        end
+
+        -- 3. زر خطر (تأكيد)
         function TabAPI:AddConfirmButton(text, callback)
             local btn = Create("TextButton", {Size = UDim2.new(1, 0, 0, 35), BackgroundColor3 = Delta.Theme.Danger, Text = "⚠ " .. text, TextColor3 = Color3.new(1,1,1), Font = Enum.Font.GothamBold, TextSize = 13, Parent = TabContainer})
             Corner(btn, 6)
-            btn.MouseButton1Click:Connect(function()
-                Window:Confirm("Are you sure you want to perform this action?", function() if callback then pcall(callback) end end)
-            end)
+            btn.MouseButton1Click:Connect(function() Window:Confirm("Are you sure?", function() if callback then pcall(callback) end end) end)
         end
 
-        -- 3. مفتاح (Toggle) مع حفظ تلقائي
+        -- 4. مفتاح (Toggle)
         function TabAPI:AddToggle(text, default, callback)
             local id = "Toggle_" .. text
             local isOn = SavedConfig[id] ~= nil and SavedConfig[id] or (default or false)
-            
             local frame = Create("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = TabContainer})
             Create("TextLabel", {Size = UDim2.new(1, -70, 1, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = frame})
             local bg = Create("Frame", {Size = UDim2.new(0, 50, 0, 26), Position = UDim2.new(1, -50, 0.5, -13), BackgroundColor3 = isOn and Delta.Theme.Accent or Delta.Theme.Surface, Parent = frame})
@@ -269,8 +331,7 @@ function Delta:CreateWindow(config)
             Corner(knob, 10)
             local click = Create("TextButton", {Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Text = "", Parent = frame})
             click.MouseButton1Click:Connect(function()
-                isOn = not isOn
-                SavedConfig[id] = isOn; SaveConfig()
+                isOn = not isOn; SavedConfig[id] = isOn; SaveConfig()
                 local target = isOn and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 3, 0.5, -10)
                 TweenService:Create(knob, TweenInfo.new(0.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Position = target}):Play()
                 TweenService:Create(bg, TweenInfo.new(0.2), {BackgroundColor3 = isOn and Delta.Theme.Accent or Delta.Theme.Surface}):Play()
@@ -278,11 +339,10 @@ function Delta:CreateWindow(config)
             end)
         end
 
-        -- 4. سلايدر (Slider) مع حفظ تلقائي
+        -- 5. سلايدر (Slider)
         function TabAPI:AddSlider(text, min, max, default, callback)
             local id = "Slider_" .. text
             local val = SavedConfig[id] ~= nil and SavedConfig[id] or (default or min)
-            
             local frame = Create("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = TabContainer})
             local label = Create("TextLabel", {Size = UDim2.new(1, 0, 0, 15), BackgroundTransparency = 1, Text = text .. " : " .. tostring(val), TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = frame})
             local track = Create("Frame", {Size = UDim2.new(1, -20, 0, 8), Position = UDim2.new(0, 10, 0, 25), BackgroundColor3 = Delta.Theme.Surface, Parent = frame})
@@ -305,7 +365,7 @@ function Delta:CreateWindow(config)
             UserInputService.InputChanged:Connect(function(input) if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input.Position.X) end end)
         end
 
-        -- 5. مربع نص (Textbox)
+        -- 6. مربع نص (Textbox)
         function TabAPI:AddTextbox(text, placeholder, callback)
             local frame = Create("Frame", {Size = UDim2.new(1, 0, 0, 50), BackgroundTransparency = 1, Parent = TabContainer})
             Create("TextLabel", {Size = UDim2.new(1, 0, 0, 15), BackgroundTransparency = 1, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = frame})
@@ -315,7 +375,17 @@ function Delta:CreateWindow(config)
             box.FocusLost:Connect(function() if callback then pcall(callback, box.Text) end end)
         end
 
-        -- 6. منتقي الألوان
+        -- 7. مربع نص كبير (Code Box)
+        function TabAPI:AddBox(text, placeholder, callback)
+            local frame = Create("Frame", {Size = UDim2.new(1, 0, 0, 150), BackgroundTransparency = 1, Parent = TabContainer})
+            Create("TextLabel", {Size = UDim2.new(1, 0, 0, 15), BackgroundTransparency = 1, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = frame})
+            local box = Create("TextBox", {Size = UDim2.new(1, 0, 0, 120), Position = UDim2.new(0, 0, 0, 20), BackgroundColor3 = Delta.Theme.Surface, Text = "", PlaceholderText = placeholder or "Paste code here...", TextColor3 = Delta.Theme.Text, PlaceholderColor3 = Delta.Theme.SubText, Font = Enum.Font.Code, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, MultiLine = true, Parent = frame})
+            Corner(box, 6); Stroke(box, Delta.Theme.Border, 1)
+            Create("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingTop = UDim.new(0, 5), Parent = box})
+            box.FocusLost:Connect(function() if callback then pcall(callback, box.Text) end end)
+        end
+
+        -- 8. منتقي الألوان
         function TabAPI:AddColorPicker(text, defaultColor, callback)
             local color = defaultColor or Color3.fromRGB(0, 255, 136)
             local frame = Create("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = TabContainer})
@@ -347,7 +417,7 @@ function Delta:CreateWindow(config)
             end)
         end
 
-        -- 7. قائمة منسدلة
+        -- 9. قائمة منسدلة
         function TabAPI:AddDropdown(text, options, callback)
             local frame = Create("Frame", {Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = TabContainer})
             Create("TextLabel", {Size = UDim2.new(0.5, 0, 1, 0), BackgroundTransparency = 1, Text = text, TextColor3 = Delta.Theme.Text, Font = Enum.Font.GothamMedium, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = frame})
@@ -374,7 +444,7 @@ function Delta:CreateWindow(config)
         return TabAPI
     end
 
-    _G.DeltaUI_v3_Loaded = Delta
+    _G.DeltaUI_v4_Loaded = Delta
     return Window
 end
 
